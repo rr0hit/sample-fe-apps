@@ -1,0 +1,58 @@
+name: Deploy Frontend Apps
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      app:
+        description: 'App to deploy (hello-world, hello-everyone, or all)'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - hello-world
+          - hello-everyone
+
+env:
+  FACETS_USERNAME: ${{ secrets.FACETS_USERNAME }}
+  FACETS_TOKEN: ${{ secrets.FACETS_TOKEN }}
+  CONTROL_PLANE_URL: ${{ vars.CONTROL_PLANE_URL }}
+  PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Raptor CLI
+        run: |
+          curl -L -o raptor https://github.com/Facets-cloud/raptor-releases/releases/latest/download/raptor-linux-amd64
+          chmod +x raptor
+          sudo mv raptor /usr/local/bin/
+
+      - name: Verify Raptor installation
+        run: raptor --version
+
+      - name: Deploy hello-world
+        if: github.event.inputs.app == 'all' || github.event.inputs.app == 'hello-world' || github.event_name == 'push'
+        run: |
+          cd hello-world
+          zip -r ../hello-world.zip .
+          cd ..
+          raptor set artifact-zip hello-world -p $PROJECT_NAME -e dev -f hello-world.zip
+
+      - name: Deploy hello-everyone
+        if: github.event.inputs.app == 'all' || github.event.inputs.app == 'hello-everyone' || github.event_name == 'push'
+        run: |
+          cd hello-everyone
+          zip -r ../hello-everyone.zip .
+          cd ..
+          raptor set artifact-zip hello-everyone -p $PROJECT_NAME -e dev -f hello-everyone.zip
+
+      - name: Cleanup
+        run: rm -f hello-world.zip hello-everyone.zip
