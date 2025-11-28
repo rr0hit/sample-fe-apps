@@ -36,7 +36,7 @@ jobs:
           sudo mv raptor /usr/local/bin/
 
       - name: Verify Raptor installation
-        run: raptor --version
+        run: raptor --help | head -5
 
       - name: Deploy hello-world
         if: github.event.inputs.app == 'all' || github.event.inputs.app == 'hello-world' || github.event_name == 'push'
